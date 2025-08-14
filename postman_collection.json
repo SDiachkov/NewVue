@@ -1,0 +1,285 @@
+{
+  "info": {
+    "name": "API Tests Template",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "{{baseUrl}}", "type": "string" },
+    { "key": "authToken", "value": "{{authToken}}", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "nonExistingUserId", "value": "000000000000000000000000", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Content-Type is JSON\", function () { pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/i); });",
+                  "const body = pm.response.json();",
+                  "const token = body.token || body.access_token || body.accessToken;",
+                  "pm.expect(token, 'token must exist in response').to.exist;",
+                  "pm.environment.set('authToken', token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response time < 1000ms', function () { pm.expect(pm.response.responseTime).to.be.below(1000); });",
+              "pm.test('Content-Type is JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/i); });",
+              "if (pm.response.headers.get('Content-Type') && /json/i.test(pm.response.headers.get('Content-Type'))) { pm.test('Body is valid JSON', function () { pm.expect(function () { pm.response.json(); }).to.not.throw(); }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/i); pm.expect(function () { pm.response.json(); }).to.not.throw(); });",
+                  "const b = pm.response.json();",
+                  "if (Array.isArray(b)) { pm.expect(b.length).to.be.at.least(0); } else if (b && typeof b === 'object' && Array.isArray(b.data)) { pm.expect(b.data.length).to.be.at.least(0); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{randomName}}\",\n  \"email\": \"{{randomEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('randomName', 'user_' + Date.now());",
+                  "pm.collectionVariables.set('randomEmail', 'user_' + Date.now() + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200/201', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "pm.test('JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/i); });",
+                  "const body = pm.response.json();",
+                  "const id = body.id || (body.data && body.data.id) || (body.user && body.user.id);",
+                  "pm.expect(id, 'id').to.exist;",
+                  "pm.environment.set('userId', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/i); });",
+                  "const body = pm.response.json();",
+                  "const id = body.id || (body.data && body.data.id) || (body.user && body.user.id);",
+                  "pm.expect(String(id)).to.eql(pm.environment.get('userId'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated {{randomName}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "const name = b.name || (b.data && b.data.name) || (b.user && b.user.name);",
+                  "pm.expect(name).to.be.a('string');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200/204', function () { pm.expect([200, 204]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User should be 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{nonExistingUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{nonExistingUserId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time < 1500ms', function () { pm.expect(pm.response.responseTime).to.be.below(1500); });"
+        ]
+      }
+    }
+  ]
+}
