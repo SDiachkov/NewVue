@@ -1,0 +1,109 @@
+name: "Отчет о баге"
+description: "Сообщите об ошибке, чтобы мы могли её исправить"
+title: "[BUG] Краткое описание"
+labels: ["bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за сообщение! Пожалуйста, заполните поля ниже максимально подробно.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Предварительная проверка
+      options:
+        - label: Я поискал(а) дубликаты и не нашёл(ла) похожего бага
+          required: true
+        - label: В отчёте нет персональных данных, токенов или секретов
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Версия/Сборка
+      description: Версия приложения/сервиса, где проявляется баг
+      placeholder: v1.2.3, commit abc123, билд 45
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Влияние/Серьёзность
+      description: Насколько сильно влияет баг
+      options:
+        - blocker
+        - critical
+        - major
+        - minor
+        - trivial
+    validations:
+      required: true
+
+  - type: textarea
+    id: area
+    attributes:
+      label: Область/Компонент
+      description: Где именно проявляется проблема (модуль, сервис, страница)
+      placeholder: "Пример: Worklist API / endpoint / UI таблицы задач"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги для воспроизведения
+      description: Нумерованный список шагов
+      placeholder: |
+        1. Открыть ...
+        2. Нажать ...
+        3. Увидеть ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое поведение
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактическое поведение
+      description: Что произошло на самом деле
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Окружение
+      description: ОС, браузер/клиент, версия платформы/рантайма, БД, конфигурация, окружение (dev/stage/prod)
+      placeholder: |
+        ОС: Ubuntu 22.04
+        Окружение: stage
+        Клиент: Chrome 126 / Postman 10
+        Backend: Java 17 / Node 20
+        БД: PostgreSQL 14
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи/Трейсы/Скриншоты
+      description: Вставьте выдержки из логов, стектрейсы и приложите скриншоты (при необходимости)
+      render: shell
+
+  - type: input
+    id: contact
+    attributes:
+      label: Контакт для уточнений
+      placeholder: "@username, email"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Дополнительная информация
+      placeholder: Любые другие детали, ссылки на связанные задачи/PR
+
